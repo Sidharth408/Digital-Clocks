@@ -1,0 +1,101 @@
+#include <DS3231.h>
+#include <Wire.h>
+
+DS3231 rtc(SDA, SCL);  
+
+int downButton = 2;    // down push button to adjust time (pin 2)
+int upButton = 3;      // up push button to adjust time (pin 3)
+
+int leftMeter = 5;     // left meter (hours) is attached to pin 5
+int rightMeter = 6;    // right meter (min) is attached to pin 6
+int secMeter=9;        //seconds meter (sec)is attached to pin 9
+
+void setup(){
+  Wire.begin();
+  Serial.begin(9600); //view time in serial monitor
+  rtc.begin();
+  rtc.setTime(22,30,1);
+  pinMode(leftMeter, OUTPUT);      // Initialize Outputs & Inputs
+  pinMode(rightMeter, OUTPUT);
+  pinMode(secMeter, OUTPUT);
+ 
+  digitalWrite(leftMeter, HIGH);   // Test meters on startup
+  digitalWrite(rightMeter, HIGH);
+  digitalWrite(secMeter, HIGH);
+  digitalWrite(13, HIGH);
+  delay (1000);
+  digitalWrite(leftMeter, LOW);
+  digitalWrite(rightMeter, LOW);
+  digitalWrite(secMeter, LOW);
+  digitalWrite(13, LOW);
+  delay(1000);
+}
+void loop() {
+  delay(75);
+ 
+  Time t = rtc.getTime();
+  unsigned long hours = t.hour;
+  unsigned long minutes = t.min;
+  unsigned long seconds = t.sec;
+  if( hours > 11){
+    hours = hours % 12;
+  }
+
+  if(digitalRead(upButton)== HIGH)
+  {
+   Serial.print("'hgih pressed'");
+   if(minutes<59)
+   {
+    minutes = minutes + 1;
+   }
+   else
+   {
+    minutes = 0;
+    if (hours < 11)
+    {
+      hours = hours + 1;
+    }
+    else
+    {
+      hours = 0;
+    }
+   }
+   rtc.setTime(hours,minutes,seconds);
+  }
+  if (digitalRead(downButton)== HIGH)
+  {
+    Serial.print("low pressed");
+    if(minutes > 0)
+    {
+      minutes = minutes - 1;
+    }
+    else
+    {
+      minutes = 59;
+      if(hours> 0)
+      {
+        hours = hours - 1;
+      }
+      else
+      {
+        hours = 11;
+      }
+    }
+   rtc.setTime(hours,minutes,seconds);
+  }
+ 
+  analogWrite(secMeter, mapping_time_pwm(seconds));
+  analogWrite(leftMeter, mapping_hour_pwm(hours));
+  analogWrite(rightMeter, mapping_time_pwm(minutes));
+}
+
+int mapping_hour_pwm(int val)
+{
+  int pwm_value = 21.25 * val;
+  return(pwm_value);
+}
+int mapping_time_pwm(int val)
+{
+  int pwm_value = val * 4.25;
+  return (pwm_value);
+}
